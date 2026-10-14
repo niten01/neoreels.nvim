@@ -17,10 +17,10 @@ local function run()
   lines = ascii.render_rgb(string.rep(string.char(255, 0, 0), 4), 2, 2, 6, 2, " @")
   check(lines[1] == "  @@  " and lines[2] == "  @@  ", "Resize letterboxes instead of stretching")
   vim.o.lines, vim.o.columns = 70, 160
-  check(helper.start(fixture), "Start cached fixture")
+  check(helper.start(fixture, { reserve_space = false }), "Start cached fixture")
   wait_for(function() return (reels.status().frames or 0) >= 2 end, "Color frames render")
   local status = reels.status()
-  check(status.width == 40 and status.height == 36, "Larger default size")
+  check(status.width == 40 and status.height == 36, "Larger default size " .. vim.inspect(status))
   local marks = api.nvim_buf_get_extmarks(status.buffer, ns, 0, -1, { details = true })
   check(#marks > 0, "Color highlights applied")
   local groups = {}
@@ -57,7 +57,7 @@ local function run()
   check(next(vim.fn.maparg("<LeftMouse>", "n", false, true)) == nil, "Mouse mappings removed on stop")
 
   for _, corner in ipairs({ "top-left", "top-right", "bottom-left", "bottom-right" }) do
-    helper.start(fixture, { corner = corner, width = 20, height = 18 })
+    helper.start(fixture, { corner = corner, width = 20, height = 18, reserve_space = false })
     local player = reels.status()
     local g = api.nvim_win_get_config(player.window)
     local right, bottom = corner:find("right") ~= nil, corner:find("bottom") ~= nil
@@ -74,7 +74,7 @@ local function run()
   end
   vim.fn.getmousepos = original_getmousepos
   vim.keymap.set("n", "<LeftMouse>", "<Nop>", { desc = "User mouse mapping" })
-  helper.start(fixture, { color = false, width = 26, height = 23 })
+  helper.start(fixture, { color = false, width = 26, height = 23, reserve_space = false })
   wait_for(function() return (reels.status().frames or 0) >= 2 end, "Monochrome fallback renders")
   check(#api.nvim_buf_get_extmarks(reels.status().buffer, ns, 0, -1, {}) == 0, "Monochrome mode has no pixel highlights")
   check(vim.fn.maparg("<LeftMouse>", "n", false, true).desc == "User mouse mapping", "User mouse bindings preserved")

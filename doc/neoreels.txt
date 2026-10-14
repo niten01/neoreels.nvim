@@ -37,6 +37,7 @@ SETUP                                                      *neoreels-setup*
       fps = 12,
       color = true,
       draggable = true,
+      reserve_space = true,
       margin = 1,
       border = "rounded",
       cell_aspect = 0.5,
@@ -55,6 +56,10 @@ width/height: terminal cells, maxima 240 / 120. Fit smaller editors automaticall
 fps: integer from 1 to 60. margin: integer from 0 to 100.
 border: none, rounded, single, double, solid.
 color: fixed 216-color ASCII palette with 256-color terminal fallback.
+reserve_space: true reserves a full-height side column. Editor buffers wrap at
+    its edge and are never covered by the video. Stopping restores their previous
+    wrap settings and returns the space. False uses a floating overlay without
+    changing editor widths or wrapping. The reserved side follows corner.
 draggable: resize using the free corner indicated by the title arrow. For
     bottom-right placement drag the top-left corner. Requires mouse input
     (:set mouse=a) and a border. Existing mappings are preserved; conflicting
@@ -88,7 +93,8 @@ LUA API                                                    *neoreels-api*
 <
 status.status: stopped, fetching, loading, playing, paused, ended, error.
 Fetching/error status includes message and optional numeric download progress.
-Open status includes window, buffer, width, height and color. Playback includes
+Open status includes window, buffer, width, height and color. The dock field
+identifies the side-column window when reserve_space is enabled. Playback includes
 path, url, and rendered frames. Feed/queue status includes feed, queue_index and
 queue_size. Resizing persists across Reels until setup() resets configuration.
 

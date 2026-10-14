@@ -38,7 +38,7 @@ local function run()
 
   vim.o.lines, vim.o.columns = 40, 100
   local editor = api.nvim_get_current_win()
-  check(helper.start(fixture, { width = 26, height = 23 }), "Start cached fixture")
+  check(helper.start(fixture, { width = 26, height = 23, reserve_space = false }), "Start cached fixture")
   wait_for(function() return reels.status().frames >= 2 end, "Cached Reel renders")
   check(api.nvim_get_current_win() == editor, "Keep editor focus")
   local active = reels.status()
@@ -46,7 +46,7 @@ local function run()
   vim.o.lines, vim.o.columns = 16, 30
   api.nvim_exec_autocmds("VimResized", {})
   local g = api.nvim_win_get_config(active.window)
-  check(g.height < 23 and g.col + g.width + 2 <= vim.o.columns, "Fit smaller editor")
+  check(g.height < 23 and g.col + g.width + 2 <= vim.o.columns, "Fit smaller editor " .. vim.inspect(g))
   wait_for(function() return reels.status().status == "ended" end, "Reel ends")
   check(api.nvim_win_is_valid(active.window), "Last frame remains visible")
   reels.stop()
@@ -54,7 +54,7 @@ local function run()
 
   vim.o.lines, vim.o.columns = 60, 100
   for _, corner in ipairs({ "top-left", "top-right", "bottom-left", "bottom-right" }) do
-    helper.start(fixture, { corner = corner })
+    helper.start(fixture, { corner = corner, reserve_space = false })
     active = reels.status()
     g = api.nvim_win_get_config(active.window)
     check((corner:find("top") and g.row == 1) or (corner:find("bottom") and g.row > 1), "Vertical corner")

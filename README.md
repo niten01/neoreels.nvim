@@ -60,8 +60,13 @@ nvim --cmd 'set runtimepath+=.' -c 'runtime plugin/neoreels.lua' -c NeoReelsPlay
 | `:NeoReelsStop` | Close the player and stop retrieval |
 | `:NeoReelsResize 60 50` | Resize to 60 columns × 50 lines |
 
-The default window is 40 columns × 36 lines and fits smaller editors. Drag the
-free corner indicated by its title arrow: the top-left corner for bottom-right
+The default window is 40 columns × 36 lines and fits smaller editors. Reels
+reserves a side column so it never covers buffer text. Editor lines wrap at the
+column's edge; stopping playback releases the space and restores previous wrap
+settings. Neovim wraps inside rectangular windows, so the reserved column spans
+the editor's full height, including the space above or below the video.
+
+Drag the free corner indicated by its title arrow: the top-left corner for bottom-right
 placement. Enable mouse input with `:set mouse=a` if necessary. Existing mouse
 mappings are preserved; dragging is disabled in modes with conflicting bindings.
 Resizing keeps playback position, editor focus, and the screen-corner anchor.
@@ -83,6 +88,7 @@ require("neoreels").setup({
   fps = 12,                 -- 1–60
   color = true,             -- false for grayscale
   draggable = true,
+  reserve_space = true,      -- wrap buffer text beside Reels; false for an overlay
   margin = 1,
   border = "rounded",       -- none, rounded, single, double, solid
   cell_aspect = 0.5,         -- terminal character width / height
@@ -135,6 +141,7 @@ Tests generate their own portrait fixtures; no demo video is bundled.
 nvim --headless -u NONE -i NONE -l tests/run.lua
 nvim --headless -u NONE -i NONE -l tests/retrieval.lua
 nvim --headless -u NONE -i NONE -l tests/display.lua
+nvim --headless -u NONE -i NONE -l tests/dock.lua
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 

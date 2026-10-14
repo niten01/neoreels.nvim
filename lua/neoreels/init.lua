@@ -7,7 +7,7 @@ local local_ytdlp = root .. "/.tools/venv/bin/yt-dlp"
 local defaults = {
   corner = "bottom-right", width = 40, height = 36, fps = 12,
   margin = 1, border = "rounded", ffmpeg = "ffmpeg",
-  ramp = " .:-=+*#%@", cell_aspect = 0.5, color = true, draggable = true,
+  ramp = " .:-=+*#%@", cell_aspect = 0.5, color = true, draggable = true, reserve_space = true,
   browser = "firefox", prefetch = 2, auto_advance = true,
   ytdlp = vim.fn.executable(local_ytdlp) == 1 and local_ytdlp or "yt-dlp",
   cache_dir = vim.fn.stdpath("cache") .. "/neoreels", cache_max_files = 20,
@@ -51,12 +51,28 @@ local function validate(opts)
   assert(opts.cache_dir ~= "" and opts.ytdlp ~= "" and opts.python ~= "", "neoreels: executable and cache paths must not be empty")
   assert(type(opts.auto_advance) == "boolean" and type(opts.feed_headless) == "boolean", "neoreels: auto_advance and feed_headless must be booleans")
   assert(type(opts.color) == "boolean" and type(opts.draggable) == "boolean", "neoreels: color and draggable must be booleans")
+  assert(type(opts.reserve_space) == "boolean", "neoreels: reserve_space must be a boolean")
 end
 
-local function layout()
+local function dock_width()
+  local edge = config.border == "none" and 0 or 2
+  local rows = math.max(1, vim.o.lines - vim.o.cmdheight - 2)
+  local scale = math.min(1, math.max(1, rows - edge - config.margin * 2) / display_height)
+  -- Leave useful editing space, even if the video is enlarged in a small UI.
+  return math.max(5, math.min(math.ceil(display_width * scale) + edge + config.margin * 2, vim.o.columns - 21))
+end
+
+local function layout(dock)
   local edge = config.border == "none" and 0 or 2
   local rows = math.max(1, vim.o.lines - vim.o.cmdheight - 1)
   local columns = vim.o.columns
+  local origin_row, origin_col = 0, 0
+  dock = dock or (state and state.dock)
+  if dock and api.nvim_win_is_valid(dock.win) then
+    rows, columns = api.nvim_win_get_height(dock.win), api.nvim_win_get_width(dock.win)
+    local pos = api.nvim_win_get_position(dock.win)
+    origin_row, origin_col = pos[1], pos[2]
+  end
   local margin = math.min(config.margin, math.max(0, math.floor((math.min(rows, columns) - edge - 1) / 2)))
   local scale = math.min(1, math.max(1, columns - edge - margin * 2) / display_width,
     math.max(1, rows - edge - margin * 2) / display_height)
@@ -66,8 +82,8 @@ local function layout()
   local geometry = {
     relative = "editor", style = "minimal", focusable = false, zindex = 45,
     width = width, height = height, border = config.border,
-    row = bottom and math.max(0, rows - height - edge - margin) or margin,
-    col = right and math.max(0, columns - width - edge - margin) or margin,
+    row = origin_row + (bottom and math.max(0, rows - height - edge - margin) or margin),
+    col = origin_col + (right and math.max(0, columns - width - edge - margin) or margin),
   }
   if config.border ~= "none" and width >= 12 then
     local arrows = { ["bottom-right"] = "↖", ["bottom-left"] = "↗", ["top-right"] = "↙", ["top-left"] = "↘" }
@@ -108,9 +124,10 @@ local function ensure_player()
   api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
   api.nvim_set_option_value("filetype", "neoreels", { buf = buf })
   api.nvim_set_option_value("modifiable", false, { buf = buf })
-  local win = api.nvim_open_win(buf, false, layout())
+  local dock = config.reserve_space and require("neoreels.dock").open(config.corner, dock_width()) or nil
+  local win = api.nvim_open_win(buf, false, layout(dock))
   local s = { buf = buf, win = win, status = "fetching", frames = 0, generation = 0,
-    loading_started = (vim.uv or vim.loop).hrtime() }
+    loading_started = (vim.uv or vim.loop).hrtime(), dock = dock }
   state = s
   api.nvim_set_option_value("winhighlight", "Normal:NeoReels,FloatBorder:NeoReelsBorder", { win = win })
   api.nvim_set_option_value("wrap", false, { win = win })
@@ -163,6 +180,7 @@ local function close_player()
   if old.decoder then old.decoder:stop() end
   if api.nvim_win_is_valid(old.win) then api.nvim_win_close(old.win, true) end
   if api.nvim_buf_is_valid(old.buf) then api.nvim_buf_delete(old.buf, { force = true }) end
+  if old.dock then old.dock:close() end
 end
 
 function M.stop()
@@ -185,6 +203,9 @@ function M.resize(width, height)
   local options = vim.tbl_extend("force", config, { width = width, height = height })
   validate(options)
   display_width, display_height = width, height
+  if state and state.dock and api.nvim_win_is_valid(state.dock.win) then
+    api.nvim_win_set_width(state.dock.win, dock_width())
+  end
   resize()
   return true
 end
@@ -206,15 +227,24 @@ function M.setup(opts)
     api.nvim_set_hl(0, "NeoReelsBorder", { link = "FloatBorder", default = true })
     require("neoreels.ascii").setup_colors()
   end })
-  api.nvim_create_autocmd("VimResized", { group = group, callback = resize })
+  api.nvim_create_autocmd("VimResized", { group = group, callback = function()
+    if state and state.dock and api.nvim_win_is_valid(state.dock.win) then
+      api.nvim_win_set_width(state.dock.win, dock_width())
+    end
+    resize()
+  end })
+  api.nvim_create_autocmd("WinResized", { group = group, callback = resize })
+  api.nvim_create_autocmd({ "WinNew", "BufWinEnter" }, { group = group, callback = function()
+    if state and state.dock then state.dock:wrap_editors() end
+  end })
   api.nvim_create_autocmd("OptionSet", {
     group = group, pattern = { "cmdheight", "laststatus", "showtabline" }, callback = resize,
   })
   api.nvim_create_autocmd("WinClosed", { group = group, callback = function(event)
-    if state and tonumber(event.match) == state.win then M.stop() end
+    if state and (tonumber(event.match) == state.win or (state.dock and tonumber(event.match) == state.dock.win)) then M.stop() end
   end })
   api.nvim_create_autocmd("BufWipeout", { group = group, callback = function(event)
-    if state and event.buf == state.buf then M.stop() end
+    if state and (event.buf == state.buf or (state.dock and event.buf == state.dock.buf)) then M.stop() end
   end })
   api.nvim_create_autocmd("VimLeavePre", { group = group, callback = M.stop })
 end
@@ -380,6 +410,7 @@ function M.status()
   if state and api.nvim_win_is_valid(state.win) then
     local geometry = api.nvim_win_get_config(state.win)
     result.width, result.height, result.color = geometry.width, geometry.height, config.color
+    result.dock = state.dock and state.dock.win or nil
   end
   result.feed = feed_status
   if state and not state.frame then result.message, result.progress = state.message, state.progress end
