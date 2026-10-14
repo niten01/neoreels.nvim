@@ -210,6 +210,30 @@ function M.resize(width, height)
   return true
 end
 
+function M.toggle_wrap()
+  if not initialized then M.setup() end
+  local enabled = not config.reserve_space
+  if state and api.nvim_win_is_valid(state.win) then
+    if enabled then
+      local dock
+      -- Create the reserved column in the player's tab, even if the command
+      -- was invoked from another tab. Keep the current editor focus intact.
+      local ok, err = pcall(api.nvim_win_call, state.win, function()
+        dock = require("neoreels.dock").open(config.corner, dock_width())
+      end)
+      if not ok then notify("Unable to enable wrap mode: " .. tostring(err)); return config.reserve_space end
+      state.dock = dock
+    elseif state.dock then
+      local dock = state.dock
+      state.dock = nil -- Its close events must not stop playback.
+      dock:close()
+    end
+  end
+  config.reserve_space = enabled
+  resize()
+  return enabled
+end
+
 function M.setup(opts)
   local next_config = vim.tbl_deep_extend("force", vim.deepcopy(defaults), opts or {})
   validate(next_config)
@@ -413,6 +437,7 @@ function M.status()
     result.dock = state.dock and state.dock.win or nil
   end
   result.feed = feed_status
+  result.reserve_space = config.reserve_space
   if state and not state.frame then result.message, result.progress = state.message, state.progress end
   return result
 end

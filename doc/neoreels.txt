@@ -28,6 +28,13 @@ COMMANDS                                                   *neoreels-commands*
     Resize the player in columns / lines without losing playback position.
     The video is letterboxed to retain its proportions.
 
+:NeoReelsWrap                                              *:NeoReelsWrap*
+    Toggle reserved side-column wrapping and the floating overlay. Playback,
+    pause state, editor focus, and the video window are preserved. Disabling
+    restores text space and previous wrap settings. The selection persists
+    across Reels and playback sessions until setup() resets it. This also works
+    before starting playback; reserve_space configures the initial mode.
+
 SETUP                                                      *neoreels-setup*
 >
     require("neoreels").setup({
@@ -88,6 +95,7 @@ LUA API                                                    *neoreels-api*
     reels.pause()
     reels.next()
     reels.resize(60, 50)
+    reels.toggle_wrap() -- returns true when wrap mode is enabled
     reels.stop()
     local status = reels.status()
 <
@@ -97,6 +105,7 @@ Open status includes window, buffer, width, height and color. The dock field
 identifies the side-column window when reserve_space is enabled. Playback includes
 path, url, and rendered frames. Feed/queue status includes feed, queue_index and
 queue_size. Resizing persists across Reels until setup() resets configuration.
+The reserve_space field reports the selected wrap mode, including when stopped.
 
 Highlights: NeoReels defaults to white on black; NeoReelsBorder links to
 FloatBorder. Use nvim_set_hl() to customize them.

@@ -18,3 +18,7 @@ end, { nargs = "+", desc = "Resize the video window without restarting playback"
 vim.api.nvim_create_user_command("NeoReelsNext", function()
   if not require("neoreels").next() then vim.notify("neoreels: No next Reel is queued") end
 end, { desc = "Skip to the next queued Reel" })
+vim.api.nvim_create_user_command("NeoReelsWrap", function()
+  local enabled = require("neoreels").toggle_wrap()
+  vim.notify("neoreels: Wrap mode " .. (enabled and "enabled" or "disabled"))
+end, { desc = "Toggle reserved space and buffer wrapping without restarting playback" })

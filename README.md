@@ -17,7 +17,7 @@ Install with lazy.nvim:
 {
   "niten01/neoreels.nvim",
   build = "sh scripts/install-retrieval.sh",
-  cmd = { "NeoReelsPlay", "NeoReelsPause", "NeoReelsNext", "NeoReelsStop", "NeoReelsResize" },
+  cmd = { "NeoReelsPlay", "NeoReelsPause", "NeoReelsNext", "NeoReelsStop", "NeoReelsResize", "NeoReelsWrap" },
   opts = {},
 }
 ```
@@ -29,7 +29,7 @@ function:
 use {
   "niten01/neoreels.nvim",
   run = "sh scripts/install-retrieval.sh",
-  cmd = { "NeoReelsPlay", "NeoReelsPause", "NeoReelsNext", "NeoReelsStop", "NeoReelsResize" },
+  cmd = { "NeoReelsPlay", "NeoReelsPause", "NeoReelsNext", "NeoReelsStop", "NeoReelsResize", "NeoReelsWrap" },
   config = function()
     require("neoreels").setup({})
   end,
@@ -59,12 +59,19 @@ nvim --cmd 'set runtimepath+=.' -c 'runtime plugin/neoreels.lua' -c NeoReelsPlay
 | `:NeoReelsNext` | Skip to the next Reel |
 | `:NeoReelsStop` | Close the player and stop retrieval |
 | `:NeoReelsResize 60 50` | Resize to 60 columns × 50 lines |
+| `:NeoReelsWrap` | Toggle wrapped side-column mode / floating overlay |
 
 The default window is 40 columns × 36 lines and fits smaller editors. Reels
 reserves a side column so it never covers buffer text. Editor lines wrap at the
 column's edge; stopping playback releases the space and restores previous wrap
 settings. Neovim wraps inside rectangular windows, so the reserved column spans
 the editor's full height, including the space above or below the video.
+
+Run `:NeoReelsWrap` to switch modes during playback without restarting the video
+or changing pause state. Disabling wrap mode restores the editor's full width and
+previous wrap settings. The selected mode persists across Reels and subsequent
+playback sessions until `setup()` resets it. Set `reserve_space = false` to start
+in overlay mode by default.
 
 Drag the free corner indicated by its title arrow: the top-left corner for bottom-right
 placement. Enable mouse input with `:set mouse=a` if necessary. Existing mouse
@@ -76,6 +83,7 @@ Video proportions are preserved with letterboxing.
 vim.keymap.set("n", "<leader>rp", "<cmd>NeoReelsPlay<cr>")
 vim.keymap.set("n", "<leader>rn", "<cmd>NeoReelsNext<cr>")
 vim.keymap.set("n", "<leader>rs", "<cmd>NeoReelsStop<cr>")
+vim.keymap.set("n", "<leader>rw", "<cmd>NeoReelsWrap<cr>")
 ```
 
 ## Configuration
@@ -128,7 +136,7 @@ Set `feed_channel = ""` afterward. Colors use a fixed 216-color foreground palet
 with a 256-color terminal fallback. The `NeoReels` highlight group controls the
 black video background; `NeoReelsBorder` controls the border.
 
-The Lua API exposes `setup()`, `play()`, `pause()`, `next()`, `stop()`, `resize(w,h)`,
+The Lua API exposes `setup()`, `play()`, `pause()`, `next()`, `stop()`, `resize(w,h)`, `toggle_wrap()`,
 and `status()`. Status includes the stage/message/progress while fetching and the
 current video, frame count, window dimensions, and feed/queue position afterward.
 Calling `setup()` stops playback and resets configuration and display size.

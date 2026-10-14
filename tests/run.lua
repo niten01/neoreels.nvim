@@ -11,7 +11,7 @@ local function wait_for(predicate, message) check(vim.wait(5000, predicate, 10),
 local function run()
   local ascii = require("neoreels.ascii")
   check(vim.deep_equal(ascii.render(string.char(0, 255, 128, 0), 2, 2, 2, 2, " .#"), { " #", ". " }), "Luminance rendering")
-  for _, name in ipairs({ "Play", "Pause", "Next", "Stop", "Resize" }) do
+  for _, name in ipairs({ "Play", "Pause", "Next", "Stop", "Resize", "Wrap" }) do
     check(vim.fn.exists(":NeoReels" .. name) == 2, "Register " .. name)
   end
   for _, name in ipairs({ "Feed", "Toggle", "Add", "Queue", "Retry" }) do
