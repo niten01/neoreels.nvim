@@ -1,0 +1,98 @@
+*neoreels.txt*  Personalized Instagram Reels as colored ASCII
+
+NEOREELS                                                   *neoreels*
+
+Requires Neovim 0.10+, FFmpeg, Python 3.11+ on Linux/macOS, and Google Chrome.
+Install dependencies with sh scripts/install-retrieval.sh and log into Instagram
+in Firefox. Playback is silent and keeps editor focus.
+
+COMMANDS                                                   *neoreels-commands*
+
+:NeoReelsPlay                                              *:NeoReelsPlay*
+    Start or restart your personalized Reels feed. The player opens immediately
+    with connection/discovery status, an animated indicator, and download
+    percentage when available. The first Reel replaces this loading display
+    in the same window. Two upcoming Reels are prefetched by default.
+
+:NeoReelsPause                                             *:NeoReelsPause*
+    Toggle pause/resume. Pausing stops consumption of decoded frames.
+
+:NeoReelsNext                                              *:NeoReelsNext*
+    Skip to the next Reel. Show progress if its download is still pending.
+
+:NeoReelsStop                                              *:NeoReelsStop*
+    Cancel downloads, close the browser helper, stop decoding and remove the
+    player. Cached videos remain for reuse.
+
+:NeoReelsResize width height                               *:NeoReelsResize*
+    Resize the player in columns / lines without losing playback position.
+    The video is letterboxed to retain its proportions.
+
+SETUP                                                      *neoreels-setup*
+>
+    require("neoreels").setup({
+      browser = "firefox",
+      corner = "bottom-right",
+      width = 40, height = 36,
+      fps = 12,
+      color = true,
+      draggable = true,
+      margin = 1,
+      border = "rounded",
+      cell_aspect = 0.5,
+      ramp = " .:-=+*#%@",
+      prefetch = 2,
+      auto_advance = true,
+      cache_max_files = 20,
+      ffmpeg = "ffmpeg",
+      feed_channel = "chrome",
+      feed_headless = true,
+    })
+<
+browser: yt-dlp browser[:profile][::container] syntax. Must be logged in.
+corner: top-left, top-right, bottom-left, bottom-right.
+width/height: terminal cells, maxima 240 / 120. Fit smaller editors automatically.
+fps: integer from 1 to 60. margin: integer from 0 to 100.
+border: none, rounded, single, double, solid.
+color: fixed 216-color ASCII palette with 256-color terminal fallback.
+draggable: resize using the free corner indicated by the title arrow. For
+    bottom-right placement drag the top-left corner. Requires mouse input
+    (:set mouse=a) and a border. Existing mappings are preserved; conflicting
+    modes do not enable drag. False leaves mouse input untouched.
+cell_aspect: character width / height, between 0.25 and 1.
+ramp: at least two printable ASCII characters ordered dark to light.
+prefetch: 0-5 clips ahead. Downloads run sequentially.
+auto_advance: advance to the next Reel at EOF.
+cache_max_files: 1-1000, at least prefetch+1. Older inactive videos are evicted.
+cache_dir: defaults to stdpath("cache")/neoreels. Each clip is capped at 50 MiB.
+ytdlp/python: executable paths; local .tools/venv binaries are auto-detected.
+feed_channel: chrome by default; empty for Playwright's bundled Chromium.
+feed_headless: false shows the helper browser.
+feed_script: advanced override for the bundled scripts/feed.py helper.
+
+The feed helper imports only Instagram cookies into an isolated browser. Cookies
+are not exported or logged. Its browsing/scrolling can affect recommendations
+and views. Discovery depends on Instagram's changing web interface. Login and
+retrieval errors appear inside the player. Resolve challenges in Firefox and
+restart with NeoReelsPlay. Stopping and closing the player clean up all jobs.
+
+LUA API                                                    *neoreels-api*
+>
+    local reels = require("neoreels")
+    reels.play()
+    reels.pause()
+    reels.next()
+    reels.resize(60, 50)
+    reels.stop()
+    local status = reels.status()
+<
+status.status: stopped, fetching, loading, playing, paused, ended, error.
+Fetching/error status includes message and optional numeric download progress.
+Open status includes window, buffer, width, height and color. Playback includes
+path, url, and rendered frames. Feed/queue status includes feed, queue_index and
+queue_size. Resizing persists across Reels until setup() resets configuration.
+
+Highlights: NeoReels defaults to white on black; NeoReelsBorder links to
+FloatBorder. Use nvim_set_hl() to customize them.
+
+vim:tw=78:ts=8:ft=help:norl:

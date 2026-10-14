@@ -1,0 +1,5 @@
+nvim.log
+doc/tags
+.tools/
+__pycache__/
+.cache/
