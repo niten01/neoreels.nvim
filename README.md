@@ -22,6 +22,23 @@ Install with lazy.nvim:
 }
 ```
 
+For packer.nvim, add this inside your `require("packer").startup(function(use)`
+function:
+
+```lua
+use {
+  "niten01/neoreels.nvim",
+  run = "sh scripts/install-retrieval.sh",
+  cmd = { "NeoReelsPlay", "NeoReelsPause", "NeoReelsNext", "NeoReelsStop", "NeoReelsResize" },
+  config = function()
+    require("neoreels").setup({})
+  end,
+}
+```
+
+Run `:PackerSync` to install the plugin, its retrieval dependencies, and compile
+the command loader. Restart Neovim afterward.
+
 Log into Instagram in Firefox, then run `:NeoReelsPlay`.
 
 For a standalone checkout:
