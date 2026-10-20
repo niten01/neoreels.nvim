@@ -10,7 +10,8 @@ is ready. The next two Reels are prefetched in the background.
 
 ## Setup
 
-Requires Neovim 0.10+, FFmpeg, Python 3.11+ on Linux/macOS, and Google Chrome.
+Requires Neovim 0.10+, FFmpeg, and Python 3.11+ on Linux/macOS. Setup downloads
+Playwright's bundled Chromium; an installed Google Chrome is preferred when available.
 Install with lazy.nvim:
 
 ```lua
@@ -108,7 +109,7 @@ require("neoreels").setup({
   ffmpeg = "ffmpeg",
   -- ytdlp = "/path/to/yt-dlp", -- .tools/venv/bin/yt-dlp is auto-detected
   -- python = "/path/to/python", -- .tools/venv/bin/python is auto-detected
-  feed_channel = "chrome",
+  feed_channel = "auto",     -- Chrome if installed, otherwise bundled Chromium
   feed_headless = true,      -- false to see the feed helper browser
 })
 ```
@@ -126,13 +127,28 @@ downloads and closes the browser; cached videos remain for reuse. Login and
 retrieval errors appear inside the loading player. Resolve login challenges in
 Firefox, then run `:NeoReelsPlay` again.
 
-To use Playwright's bundled Chromium instead of Google Chrome:
+The default `feed_channel = "auto"` tries Google Chrome, then falls back to bundled
+Chromium if Chrome is missing. Set `feed_channel = "chrome"` to require Chrome,
+or `feed_channel = ""` to always use bundled Chromium. Explicit channels are
+respected and do not fall back to another browser.
+
+If this machine was set up with an older plugin version, rerun:
 
 ```sh
-.tools/venv/bin/python -m playwright install chromium
+sh scripts/install-retrieval.sh
 ```
 
-Set `feed_channel = ""` afterward. Colors use a fixed 216-color foreground palette
+This installs both Python dependencies and the matching Chromium browser. On
+Linux, an error about missing system libraries may require running the configured
+Python with `-m playwright install-deps chromium` (may require administrator access).
+
+Feed errors distinguish missing browsers, startup failures, network errors,
+timeouts, HTTP failures, and Instagram login/challenge redirects. Network errors
+include only the browser's error code, never its raw logs or cookies. To inspect
+Instagram in the helper browser, set `feed_headless = false`. Firefox-specific VPN
+or proxy settings are not copied to the separate feed browser.
+
+Colors use a fixed 216-color foreground palette
 with a 256-color terminal fallback. The `NeoReels` highlight group controls the
 black video background; `NeoReelsBorder` controls the border.
 

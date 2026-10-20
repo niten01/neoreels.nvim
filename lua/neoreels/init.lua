@@ -12,7 +12,7 @@ local defaults = {
   ytdlp = vim.fn.executable(local_ytdlp) == 1 and local_ytdlp or "yt-dlp",
   cache_dir = vim.fn.stdpath("cache") .. "/neoreels", cache_max_files = 20,
   python = vim.fn.executable(local_python) == 1 and local_python or "python3",
-  feed_script = root .. "/scripts/feed.py", feed_channel = "chrome", feed_headless = true,
+  feed_script = root .. "/scripts/feed.py", feed_channel = "auto", feed_headless = true,
 }
 local config = vim.deepcopy(defaults)
 local state
